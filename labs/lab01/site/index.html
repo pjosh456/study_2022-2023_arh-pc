@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeFlow - Анализ временных рядов</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --text: #333;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Навигация */
+        nav {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .nav-link {
+            color: var(--dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 0.5rem 0;
+            position: relative;
+        }
+        
+        .nav-link:hover {
+            color: var(--primary);
+        }
+        
+        .nav-link.active {
+            color: var(--primary);
+        }
+        
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+        }
+        
+        /* Главный заголовок */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 4rem 0 3rem;
+            text-align: center;
+        }
+        
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            opacity: 0.9;
+        }
+        
+        /* Основное содержимое */
+        main {
+            padding: 3rem 0;
+            min-height: 60vh;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            font-size: 2rem;
+            color: var(--secondary);
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: var(--accent);
+            margin: 10px auto;
+            border-radius: 2px;
+        }
+        
+        /* Карточки */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        /* Диаграммы */
+        .diagram {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .diagram-title {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+        }
+        
+        .diagram-icon {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .diagram-image {
+        max-width: 100%;
+        height: auto;
+        width: 300px; /* или любой другой размер */
+        display: block;
+        margin: 0 auto; /* центрирование */
+    }
+        
+        /* Футер */
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .footer-link {
+            color: var(--light);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-link:hover {
+            color: var(--accent);
+        }
+        
+        .copyright {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .nav-links {
+                width: 100%;
+                justify-content: space-around;
+                flex-wrap: wrap;
+            }
+            
+            .header-title {
+                font-size: 2rem;
+            }
+        }
+        
+        /* Скрытие/показ страниц */
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav>
+        <div class="container nav-container">
+            <a href="#" class="logo" data-page="home">TimeFlow Analytics</a>
+            <div class="nav-links">
+                <a href="#" class="nav-link active" data-page="home">Главная</a>
+                <a href="#" class="nav-link" data-page="product">Продукт</a>
+                <a href="#" class="nav-link" data-page="diagrams">Диаграммы</a>
+                <a href="#" class="nav-link" data-page="analysis">Анализ</a>
+                <a href="#" class="nav-link" data-page="planning">Планирование</a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Главная страница -->
+    <div class="page active" id="home">
+        <header>
+            <div class="container">
+                <h1 class="header-title">TimeFlow Analytics</h1>
+                <p class="tagline">Мощное решение для анализа временных рядов с автоматизированным прогнозированием и визуализацией</p>
+            </div>
+        </header>
+        
+        <main class="container">
+            <section>
+                <h2 class="section-title">О проекте</h2>
+                <div class="card">
+                    <p>TimeFlow Analytics — это инновационное приложение для анализа временных рядов, предназначенное для коммерческих аналитиков и обычных пользователей.</p>
+                    <p>Наша цель — упростить сложные процессы анализа данных, предоставив интуитивно понятный интерфейс и мощные аналитические инструменты в одном решении.</p>
+                </div>
+            </section>
+            
+            <section>
+                <h2 class="section-title">Ключевые возможности</h2>
+                <div class="card">
+                    <h3 class="card-title">Автоматическое прогнозирование</h3>
+                    <p>Использование современных методов машинного обучения и аналитиики (LSTM, ARIMA, SARIMA, Transformers) для точных прогнозов без необходимости написания кода.</p>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Продвинутая визуализация</h3>
+                    <p>Интерактивные графики с возможностью детального изучения тенденций и аномалий в данных.</p>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Гибкая настройка</h3>
+                    <p>Возможность ручной настройки параметров моделей для опытных пользователей.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Страница продукта -->
+    <div class="page" id="product">
+        <header>
+            <div class="container">
+                <h1 class="header-title">Продукт</h1>
+                <p class="tagline">Технические детали и характеристики приложения</p>
+            </div>
+        </header>
+        
+        <main class="container">
+            <section>
+                <h2 class="section-title">4P Анализа</h2>
+                <div class="card">
+                    <h3 class="card-title">Product (Продукт)</h3>
+                    <p>Приложение для анализа временных рядов — это цифровой продукт, предназначенный для автоматизации обработки, анализа и прогнозирования временных рядов.</p>
+                    <p>Поддерживаемые технологии:</p>
+                    <ul>
+                        <li>Python (основной язык)</li>
+                        <li>PyQt для десктоп-версии</li>
+                        <li>Flask/Django для веб-версии</li>
+                        <li>Библиотеки: Pandas, NumPy, TensorFlow, PyTorch</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Price (Цена)</h3>
+                    <p>Стоимость разработки: 800 000 - 1 500 000 руб. в зависимости от сложности функционала.</p>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Place (Распространение)</h3>
+                    <p>Целевая аудитория:</p>
+                    <ul>
+                        <li>Коммерческие аналитики</li>
+                        <li>Финансовые специалисты</li>
+                        <li>Маркетологи</li>
+                        <li>ИТ-компании и стартапы</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Promotion (Продвижение)</h3>
+                    <p>Стратегии продвижения:</p>
+                    <ul>
+                        <li>Обучающие материалы и вебинары</li>
+                        <li>Партнерство с Kaggle, GitHub</li>
+                        <li>Реклама в профессиональных сообществах</li>
+                        <li>Кейсы успешного применения</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Страница диаграмм -->
+    <div class="page" id="diagrams">
+        <header>
+            <div class="container">
+                <h1 class="header-title">Диаграммы проекта</h1>
+                <p class="tagline">Визуальное представление архитектуры и процессов</p>
+            </div>
+        </header>
+        
+        <main class="container">
+            <section class="diagrams-section">
+                <h2 class="section-title">Полный набор диаграмм проекта</h2>
+                
+                <!-- Диаграмма классов -->
+                <div class="diagram-card">
+                    <div class="diagram-header">
+                        <span class="diagram-icon">📐</span>
+                        <h3>Диаграмма классов</h3>
+                    </div>
+                    <div class="diagram-content">
+                        <img src="Диаграмма классов.jpg" alt="Диаграмма классов" class="diagram-image">
+                        <div class="diagram-description">
+                            <p><strong>Основные классы:</strong> DataLoader, DataPreprocessor, Analyzer, Visualizer, Exporter, UserInterface</p>
+                            <p><strong>Назначение:</strong> Определяет структуру системы, отношения между классами и их атрибуты. Служит основой для реализации кода.</p>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Диаграмма компонентов -->
+                <div class="diagram-card">
+                    <div class="diagram-header">
+                        <span class="diagram-icon">🧩</span>
+                        <h3>Диаграмма компонентов</h3>
+                    </div>
+                    <div class="diagram-content">
+                        <img src="Диаграмма компонентов .jpg" alt="Диаграмма компонентов" class="diagram-image">
+                        <div class="diagram-description">
+                            <p><strong>Основные компоненты:</strong> Модули загрузки данных, обработки, анализа, визуализации</p>
+                            <p><strong>Назначение:</strong> Показывает физические компоненты системы и их взаимодействие через интерфейсы.</p>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Диаграмма развертывания -->
+                <div class="diagram-card">
+                    <div class="diagram-header">
+                        <span class="diagram-icon">🖥️</span>
+                        <h3>Диаграмма развертывания</h3>
+                    </div>
+                    <div class="diagram-content">
+                        <img src="Диаграмма развертывания .jpg" alt="Диаграмма развертывания" class="diagram-image">
+                        <div class="diagram-description">
+                            <p><strong>Компоненты:</strong> Пользовательский компьютер, сервер приложения, база данных</p>
+                            <p><strong>Назначение:</strong> Описывает физическое размещение компонентов системы на аппаратных узлах.</p>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Диаграмма последовательностей -->
+                <div class="diagram-card">
+                    <div class="diagram-header">
+                        <span class="diagram-icon">🔄</span>
+                        <h3>Диаграмма последовательностей</h3>
+                    </div>
+                    <div class="diagram-content">
+                        <img src="Диаграмма последовательностей .jpg" alt="Диаграмма последовательностей" class="diagram-image">
+                        <div class="diagram-description">
+                            <p><strong>Процессы:</strong> Загрузка данных → Предобработка → Анализ → Визуализация</p>
+                            <p><strong>Назначение:</strong> Детализирует временную последовательность взаимодействия объектов.</p>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Диаграмма состояний -->
+                <div class="diagram-card">
+                    <div class="diagram-header">
+                        <span class="diagram-icon">📶</span>
+                        <h3>Диаграмма состояний</h3>
+                    </div>
+                    <div class="diagram-content">
+                        <img src="Диаграмма состояний .jpg" alt="Диаграмма состояний" class="diagram-image">
+                        <div class="diagram-description">
+                            <p><strong>Состояния:</strong> Загружено → Обработано → Проанализировано → Визуализировано</p>
+                            <p><strong>Назначение:</strong> Описывает жизненный цикл данных в системе и условия переходов между состояниями.</p>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Диаграмма активности -->
+                <div class="diagram-card">
+                    <div class="diagram-header">
+                        <span class="diagram-icon">🏃</span>
+                        <h3>Диаграмма активности</h3>
+                    </div>
+                    <div class="diagram-content">
+                        <img src="Диаграмма активности .jpg" alt="Диаграмма активности" class="diagram-image">
+                        <div class="diagram-description">
+                            <p><strong>Процессы:</strong> Пользовательские сценарии работы с приложением</p>
+                            <p><strong>Назначение:</strong> Визуализирует бизнес-процессы и workflow системы.</p>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Диаграмма коммуникации -->
+                <div class="diagram-card">
+                    <div class="diagram-header">
+                        <span class="diagram-icon">📡</span>
+                        <h3>Диаграмма коммуникации</h3>
+                    </div>
+                    <div class="diagram-content">
+                        <img src="Диаграмма коммуникации .jpg" alt="Диаграмма коммуникации" class="diagram-image">
+                        <div class="diagram-description">
+                            <p><strong>Элементы:</strong> Объекты системы и их взаимодействие</p>
+                            <p><strong>Назначение:</strong> Альтернативное представление взаимодействий между объектами.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <style>
+                .diagrams-section {
+                    padding: 2rem;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                }
+                
+                .diagram-card {
+                    background: white;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    margin-bottom: 30px;
+                    overflow: hidden;
+                }
+                
+                .diagram-header {
+                    background: linear-gradient(135deg, #4361ee, #3f37c9);
+                    color: white;
+                    padding: 15px 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                }
+                
+                .diagram-header h3 {
+                    margin: 0;
+                    font-size: 1.3rem;
+                }
+                
+                .diagram-icon {
+                    font-size: 1.5rem;
+                }
+                
+                .diagram-content {
+                    display: flex;
+                    flex-wrap: wrap;
+                    padding: 20px;
+                }
+                
+                .diagram-image {
+                    width: 55%;
+                    border: 1px solid #eee;
+                    border-radius: 8px;
+                    object-fit: contain;
+                    max-height: 400px;
+                }
+                
+                .diagram-description {
+                    width: 45%;
+                    padding: 0 20px;
+                }
+                
+                .diagram-description p {
+                    margin-bottom: 15px;
+                    line-height: 1.6;
+                }
+                
+                @media (max-width: 768px) {
+                    .diagram-content {
+                        flex-direction: column;
+                    }
+                    
+                    .diagram-image,
+                    .diagram-description {
+                        width: 100%;
+                    }
+                    
+                    .diagram-image {
+                        margin-bottom: 20px;
+                    }
+                }
+            </style>
+        </main>
+    </div>
+    
+    <!-- Страница анализа -->
+    <div class="page" id="analysis">
+        <header>
+            <div class="container">
+                <h1 class="header-title">Анализ проекта</h1>
+                <p class="tagline">SWOT-анализ и оценка рисков</p>
+            </div>
+        </header>
+        
+        <main class="container">
+            <section>
+                <h2 class="section-title">SWOT-анализ</h2>
+                
+                <div class="card">
+                    <h3 class="card-title">Преимущества (Strengths)</h3>
+                    <ul>
+                        <li>Удобство использования: минимизация необходимости программирования</li>
+                        <li>Широкий выбор методов анализа: от классических до современных</li>
+                        <li>Удобная визуализация данных и результатов</li>
+                        <li>Гибкость для работы с различными типами временных рядов</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Недостатки (Weaknesses)</h3>
+                    <ul>
+                        <li>Ограничения по производительности для больших датасетов</li>
+                        <li>Необходимость обучения пользователей для работы с нейросетевыми методами</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Возможности (Opportunities)</h3>
+                    <ul>
+                        <li>Рост спроса на инструменты анализа данных</li>
+                        <li>Развитие технологий машинного обучения</li>
+                        <li>Расширение функционала для смежных задач</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Риски (Threats)</h3>
+                    <ul>
+                        <li>Появление конкурентных решений</li>
+                        <li>Изменения в требованиях к аналитике данных</li>
+                        <li>Технические сложности интеграции новых методов</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Страница планирования -->
+    <div class="page" id="planning">
+        <header>
+            <div class="container">
+                <h1 class="header-title">Планирование</h1>
+                <p class="tagline">Этапы разработки и управление проектом</p>
+            </div>
+        </header>
+        
+        <main class="container">
+            <section>
+                <h2 class="section-title">Этапы разработки</h2>
+                
+                <div class="card">
+                    <h3 class="card-title">1. Инициация</h3>
+                    <ul>
+                        <li>Определение целей и задач проекта</li>
+                        <li>Анализ требований</li>
+                        <li>Первичный SWOT-анализ</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">2. Планирование</h3>
+                    <ul>
+                        <li>Создание диаграмм UML</li>
+                        <li>Разработка архитектуры</li>
+                        <li>Оценка сроков и ресурсов</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">3. Разработка</h3>
+                    <ul>
+                        <li>Реализация модулей</li>
+                        <li>Интеграция компонентов</li>
+                        <li>Промежуточное тестирование</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">4. Тестирование</h3>
+                    <ul>
+                        <li>Функциональное тестирование</li>
+                        <li>Тестирование производительности</li>
+                        <li>Исправление ошибок</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">5. Внедрение</h3>
+                    <ul>
+                        <li>Развертывание приложения</li>
+                        <li>Обучение пользователей</li>
+                        <li>Подготовка документации</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="#" class="footer-link">Документация</a>
+                <a href="#" class="footer-link">Контакты</a>
+                <a href="#" class="footer-link">GitHub</a>
+            </div>
+            <p class="copyright">© 2025 TimeFlow Analytics. Ощепков Д. В | Алади П. Ч.</p>
+        </div>
+    </footer>
+    
+    <script>
+        // Навигация между страницами
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Удаляем активный класс у всех ссылок
+                document.querySelectorAll('.nav-link').forEach(navLink => {
+                    navLink.classList.remove('active');
+                });
+                
+                // Добавляем активный класс к текущей ссылке
+                this.classList.add('active');
+                
+                // Скрываем все страницы
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.remove('active');
+                });
+                
+                // Показываем выбранную страницу
+                const pageId = this.getAttribute('data-page');
+                document.getElementById(pageId).classList.add('active');
+                
+                // Прокрутка вверх
+                window.scrollTo(0, 0);
+            });
+        });
+    </script>
+</body>
+</html>
